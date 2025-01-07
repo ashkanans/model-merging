@@ -6,6 +6,7 @@ from models.cifar10_models import CIFAR10ResNet, CIFAR10VGG
 from src.core.analyze_pipeline import analyze_pipeline
 from src.core.divergent_models_pipeline import divergent_models_pipeline
 from src.core.merging_methods import comparison_pipeline
+from src.core.noisy_training_pipeline import noisy_training_pipeline
 from src.models.mnist_model import MNISTMLP, MNISTCNN
 from src.utils.utiliy import validate_model
 from utils.dataset_loader import DatasetLoader
@@ -26,6 +27,7 @@ def main():
     parser.add_argument("--divergent", action="store_true", help="Run the divergent models pipeline.")
     parser.add_argument("--alpha", type=float, default=0.5, help="Alpha for Fisher-weighted averaging (default: 0.5).")
     parser.add_argument("--analyze", action="store_true", help="Analyze the components of Fisher merging.")
+    parser.add_argument("--noise", action="store_true", help="Test merging methods with noisy models.")
     args = parser.parse_args()
 
     # Check for mutually exclusive flags
@@ -74,6 +76,11 @@ def main():
             print(f"Running with Fisher Scaling Factor: {scaling_factor}")
             analyze_pipeline(train_loader, test_loader, model1, model2, criterion, fisher_scaling=scaling_factor)
 
+        return
+
+    if args.noise:
+        print("Running Noisy Models Pipeline...")
+        noisy_training_pipeline()
         return
 
     # Handle Training Pipeline
