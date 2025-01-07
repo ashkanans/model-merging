@@ -1,5 +1,4 @@
 import os
-from utils.model_io import ModelIO
 
 class ModelRepository:
     def __init__(self, models_dir="models"):

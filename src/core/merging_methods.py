@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm
 
 from src.core.fisher_weighted_averaging import FisherWeightedAveraging
-from src.utils.utiliy import validate_model
+from src.utils.utiliy import validate_model, plot_layer_distributions_with_stats
 
 
 class NaiveMerging:
@@ -111,6 +111,14 @@ def comparison_pipeline(train_loader, test_loader, model1, model2, criterion):
     # Step 5: Generate Comparison Chart
     draw_comparison_chart(isotropic_results, ensemble_results, fisher_results)
 
+    # plot_layer_distributions(ensemble_model, ["fc1.weight", "fc2.weight"], "Ensembeled Merged Model")
+    models = [model1, model2, isotropic_model, fisher_merged_model]
+    model_labels = ["Model 1", "Model 2", "Isotropic Merged", "Fisher Merged"]
+    layer_names = ["fc1.weight", "fc2.weight"]
+
+    # Plot all layer distributions together
+    plot_layer_distributions_with_stats(models, layer_names, model_labels)
+
 
 def draw_comparison_chart(isotropic_results, ensemble_results, fisher_results):
     """
@@ -151,3 +159,4 @@ def draw_comparison_chart(isotropic_results, ensemble_results, fisher_results):
     plt.ylabel("F1-Score (%)")
     plt.title("Comparison of Merging Methods: F1-Score")
     plt.show(block=True)
+
