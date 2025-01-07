@@ -26,3 +26,19 @@ class DatasetLoader:
             DataLoader(train_set, batch_size=batch_size, shuffle=True),
             DataLoader(test_set, batch_size=batch_size, shuffle=False),
         )
+
+    @staticmethod
+    def load_fashion_mnist(batch_size=64):
+        """
+        Load the Fashion-MNIST dataset with transformations.
+
+        :param batch_size: Batch size for the DataLoader.
+        :return: Tuple of DataLoader instances for train and test datasets.
+        """
+        transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5,), (0.5,))])
+        train_set = datasets.FashionMNIST(root='./data', train=True, transform=transform, download=True)
+        test_set = datasets.FashionMNIST(root='./data', train=False, transform=transform, download=True)
+        return (
+            DataLoader(train_set, batch_size=batch_size, shuffle=True),
+            DataLoader(test_set, batch_size=batch_size, shuffle=False),
+        )
