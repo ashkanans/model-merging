@@ -34,49 +34,59 @@ class FisherWeightedAveraging:
                     else:
                         fisher_matrix[name] += param.grad.data.clone().pow(2)
 
-        # Normalize Fisher information
         for name in fisher_matrix:
             fisher_matrix[name] /= len(data_loader)
 
         return fisher_matrix
 
     @staticmethod
-    def merge_models(model1, model2, fisher1, fisher2, alpha=0.5):
+    def merge_models(
+            model1,
+            model2,
+            fisher1,
+            fisher2,
+            alpha=0.5,
+            uniform_weights=False,
+            layer_wise_fisher=None,
+            fisher_scaling=1.0
+    ):
         """
-        Merge two models using Fisher-weighted averaging.
+        Merge two models using Fisher-weighted averaging with various options.
 
         :param model1: The first model to merge.
         :param model2: The second model to merge.
         :param fisher1: Fisher information for the first model.
         :param fisher2: Fisher information for the second model.
-        :param alpha: Balancing factor for Fisher-weighted averaging (default: 0.5).
+        :param alpha: Balancing factor for averaging (default: 0.5).
+        :param uniform_weights: If True, disables Fisher weighting (uses uniform weights).
+        :param layer_wise_fisher: List of layers to apply Fisher merging; isotropic merging for others.
+        :param fisher_scaling: Scaling factor to apply to Fisher Information.
         :return: The merged model.
         """
-        # Create a deep copy of model1 for the merged model
         merged_model = copy.deepcopy(model1)
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         merged_model.to(device)
         model2.to(device)
 
-        # Add epsilon for numerical stability
         epsilon = 1e-8
 
-        # Merge parameters using Fisher-weighted averaging
         for (name1, param1), (name2, param2) in tqdm(
-            zip(merged_model.named_parameters(), model2.named_parameters()),
-            desc="Merging Models",
-            unit="param"
+                zip(merged_model.named_parameters(), model2.named_parameters()),
+                desc="Merging Models",
+                unit="param"
         ):
-            if name1 in fisher1 and name1 in fisher2:
-                # Get Fisher weights and normalize
-                weight1 = fisher1[name1].to(device)
-                weight2 = fisher2[name1].to(device)
+            if name1 == name2:
+                if uniform_weights or (layer_wise_fisher and name1 not in layer_wise_fisher):
+                    # Use naive isotropic merging for uniform weights or excluded layers
+                    merged_param = alpha * param1.data + (1 - alpha) * param2.data
+                else:
+                    # Apply Fisher weighting with optional scaling
+                    weight1 = fisher_scaling * fisher1.get(name1, torch.ones_like(param1.data)).to(device)
+                    weight2 = fisher_scaling * fisher2.get(name1, torch.ones_like(param2.data)).to(device)
 
-                # Normalize Fisher weights
-                total_weight = weight1 + weight2 + epsilon
-                merged_param = (alpha * weight1 * param1.data + (1 - alpha) * weight2 * param2.data) / total_weight
+                    total_weight = weight1 + weight2 + epsilon
+                    merged_param = (alpha * weight1 * param1.data + (1 - alpha) * weight2 * param2.data) / total_weight
 
-                # Update the merged model parameter
                 param1.data.copy_(merged_param)
 
         return merged_model

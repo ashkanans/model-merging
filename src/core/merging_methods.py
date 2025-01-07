@@ -1,8 +1,6 @@
 import copy
 
-import torch
 import matplotlib.pyplot as plt
-from tqdm import tqdm
 
 from src.core.fisher_weighted_averaging import FisherWeightedAveraging
 from src.utils.utiliy import validate_model, plot_layer_distributions_with_stats
