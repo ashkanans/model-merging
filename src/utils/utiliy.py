@@ -118,3 +118,48 @@ def plot_layer_distributions_with_stats(models, layer_names, model_labels):
     # Adjust layout
     plt.tight_layout()
     plt.show(block=True)
+
+
+def plot_fisher_information(fisher_matrix, layer_names):
+    """
+    Plot Fisher Information across layers to identify contributions.
+
+    :param fisher_matrix: Dictionary of Fisher Information for each layer.
+    :param layer_names: List of layer names to visualize.
+    """
+    # Sum Fisher Information for each layer
+    values = [fisher_matrix[layer_name].sum().item() for layer_name in layer_names]
+
+    # Plot Fisher Information
+    plt.figure(figsize=(10, 6))
+    plt.bar(layer_names, values, color='skyblue')
+    plt.title("Fisher Information by Layer")
+    plt.xlabel("Layer")
+    plt.ylabel("Fisher Information Sum")
+    plt.xticks(rotation=45, ha='right')
+    plt.tight_layout()
+    plt.show(block=True)
+
+def plot_generalization_results(results, model1_type, model2_type):
+    """
+    Plot generalization results for merging techniques.
+
+    :param results: Dictionary containing validation results.
+    :param model1_type: Architecture of the first model.
+    :param model2_type: Architecture of the second model.
+    """
+    metrics = ["model1_results", "model2_results", "isotropic_results", "fisher_results"]
+    accuracy = [results[m]["accuracy"] * 100 for m in metrics]
+    labels = [
+        f"{model1_type.upper()} Model",
+        f"{model2_type.upper()} Model",
+        "Isotropic Merged",
+        "Fisher Merged",
+    ]
+
+    plt.figure(figsize=(10, 6))
+    plt.bar(labels, accuracy, color=["blue", "green", "orange", "purple"])
+    plt.title(f"Generalization of Merging Techniques ({model1_type.upper()} vs. {model2_type.upper()})")
+    plt.ylabel("Accuracy (%)")
+    plt.ylim(0, 100)
+    plt.show()

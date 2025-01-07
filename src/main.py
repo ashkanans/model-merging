@@ -5,11 +5,13 @@ from torch import nn
 from models.cifar10_models import CIFAR10ResNet, CIFAR10VGG
 from src.core.analyze_pipeline import analyze_pipeline
 from src.core.divergent_models_pipeline import divergent_models_pipeline
+from src.core.fisher_information_visualization_pipeline import fisher_information_visualization_pipeline
 from src.core.fisher_scaling_experiment import fisher_scaling_experiment
+from src.core.generalization_pipeline import generalization_pipeline
 from src.core.merging_methods import comparison_pipeline
 from src.core.noisy_training_pipeline import noisy_training_pipeline
 from src.models.mnist_model import MNISTMLP, MNISTCNN
-from src.utils.utiliy import validate_model
+from src.utils.utiliy import validate_model, plot_generalization_results
 from utils.dataset_loader import DatasetLoader
 from core.training_pipeline import TrainingPipeline
 from core.fisher_weighted_averaging import FisherWeightedAveraging
@@ -30,6 +32,11 @@ def main():
     parser.add_argument("--analyze", action="store_true", help="Analyze the components of Fisher merging.")
     parser.add_argument("--noise", action="store_true", help="Test merging methods with noisy models.")
     parser.add_argument("--scaling", action="store_true", help="Test Fisher scaling factor impact.")
+    parser.add_argument("--fisher_visualize", action="store_true",
+                        help="Visualize Fisher Information across model layers.")
+    parser.add_argument("--generalize", action="store_true", help="Test merging generalization across architectures.")
+    parser.add_argument("--model2", type=str, help="Second model architecture for generalization testing.")
+
 
     args = parser.parse_args()
 
@@ -103,6 +110,40 @@ def main():
         fisher_scaling_experiment(train_loader, test_loader, model1, model2, fisher1, fisher2, criterion)
 
         return
+
+    if args.fisher_visualize:
+        print("Running Fisher Information Visualization Pipeline...")
+        model1 = ModelIO.load_model(model1, f"{args.dataset}_{args.model}_1.pth")
+        criterion = nn.CrossEntropyLoss()
+
+        # Run Fisher Information Visualization Pipeline
+        fisher_information_visualization_pipeline(model1, train_loader, criterion)
+        return
+
+    if args.generalize:
+        print("Running Generalization Pipeline...")
+        model1_type = args.model
+        model2_type = args.model2
+        dataset = args.dataset
+
+        # Load dataset
+        if dataset == "cifar10":
+            train_loader, test_loader = DatasetLoader.load_cifar10()
+        else:
+            raise ValueError("Generalization testing is currently supported only for CIFAR-10.")
+
+        # Run generalization pipeline
+        results = generalization_pipeline(
+            dataset=dataset,
+            model1_type=model1_type,
+            model2_type=model2_type,
+            train_loader=train_loader,
+            test_loader=test_loader,
+            epochs=args.epochs,
+        )
+
+        # Plot results
+        plot_generalization_results(results, model1_type, model2_type)
 
     # Handle Training Pipeline
     if not args.merge and not args.compare:
