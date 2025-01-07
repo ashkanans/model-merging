@@ -5,6 +5,7 @@ from torch import nn
 from models.cifar10_models import CIFAR10ResNet, CIFAR10VGG
 from src.core.analyze_pipeline import analyze_pipeline
 from src.core.divergent_models_pipeline import divergent_models_pipeline
+from src.core.fisher_scaling_experiment import fisher_scaling_experiment
 from src.core.merging_methods import comparison_pipeline
 from src.core.noisy_training_pipeline import noisy_training_pipeline
 from src.models.mnist_model import MNISTMLP, MNISTCNN
@@ -28,6 +29,8 @@ def main():
     parser.add_argument("--alpha", type=float, default=0.5, help="Alpha for Fisher-weighted averaging (default: 0.5).")
     parser.add_argument("--analyze", action="store_true", help="Analyze the components of Fisher merging.")
     parser.add_argument("--noise", action="store_true", help="Test merging methods with noisy models.")
+    parser.add_argument("--scaling", action="store_true", help="Test Fisher scaling factor impact.")
+
     args = parser.parse_args()
 
     # Check for mutually exclusive flags
@@ -83,6 +86,24 @@ def main():
         noisy_training_pipeline()
         return
 
+    if args.scaling:
+        print("Running Fisher Scaling Experiment...")
+        # Load pre-trained models
+        model1 = ModelIO.load_model(model1, f"{args.dataset}_{args.model}_1.pth")
+        model2 = ModelIO.load_model(model2, f"{args.dataset}_{args.model}_2.pth")
+        criterion = nn.CrossEntropyLoss()
+
+        # Compute Fisher Information
+        print("Computing Fisher Information for Model 1...")
+        fisher1 = FisherWeightedAveraging.compute_fisher_information(model1, train_loader, criterion)
+        print("Computing Fisher Information for Model 2...")
+        fisher2 = FisherWeightedAveraging.compute_fisher_information(model2, train_loader, criterion)
+
+        # Run the scaling experiment
+        fisher_scaling_experiment(train_loader, test_loader, model1, model2, fisher1, fisher2, criterion)
+
+        return
+
     # Handle Training Pipeline
     if not args.merge and not args.compare:
         print(f"Training {args.model} on {args.dataset}...")
@@ -126,8 +147,6 @@ def main():
         model2 = ModelIO.load_model(model2, f"{args.dataset}_{args.model}_2.pth")
         criterion = nn.CrossEntropyLoss()
         comparison_pipeline(train_loader, test_loader, model1, model2, criterion)
-
-
 
 
 if __name__ == "__main__":
