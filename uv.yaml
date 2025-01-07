@@ -1,1 +1,15 @@
-ECHO is on.
+project:
+  name: model-merging
+  version: 0.1.0
+dependencies:
+  - numpy
+  - torch
+  - pyyaml
+  - tqdm
+  - matplotlib
+  - scikit-learn
+commands:
+  - name: "Run Fisher-Weighted Averaging"
+    run: "python src/main.py fisher"
+  - name: "Run Git Re-Basin"
+    run: "python src/main.py rebasin"
