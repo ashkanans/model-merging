@@ -40,6 +40,7 @@ def generalization_pipeline(dataset, model1_type, model2_type, train_loader, tes
     pipeline1 = TrainingPipeline(model1, train_loader, test_loader, optimizer_params=optimizer_params)
     pipeline1.train(epochs=epochs)
     results1 = pipeline1.test()
+    print(validate_model(model1, test_loader, criterion))
     print(f"{model1_type.upper()} Model 1 Results:", results1)
     ModelIO.save_model(model1, f"{dataset}_{model1_type}_1.pth")
 
@@ -48,6 +49,7 @@ def generalization_pipeline(dataset, model1_type, model2_type, train_loader, tes
     pipeline2 = TrainingPipeline(model2, train_loader, test_loader, optimizer_params=optimizer_params)
     pipeline2.train(epochs=epochs)
     results2 = pipeline2.test()
+    print(validate_model(model2, test_loader, criterion))
     print(f"{model2_type.upper()} Model 2 Results:", results2)
     ModelIO.save_model(model2, f"{dataset}_{model2_type}_2.pth")
 

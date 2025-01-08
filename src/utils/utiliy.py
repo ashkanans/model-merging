@@ -63,9 +63,11 @@ def plot_layer_distributions(model, layer_names, title):
     plt.legend()
     plt.show(block=True)
 
+
 import matplotlib.pyplot as plt
 
 import matplotlib.pyplot as plt
+
 
 def plot_layer_distributions_with_stats(models, layer_names, model_labels):
     """
@@ -140,6 +142,7 @@ def plot_fisher_information(fisher_matrix, layer_names):
     plt.tight_layout()
     plt.show(block=True)
 
+
 def plot_generalization_results(results, model1_type, model2_type):
     """
     Plot generalization results for merging techniques.
@@ -148,8 +151,15 @@ def plot_generalization_results(results, model1_type, model2_type):
     :param model1_type: Architecture of the first model.
     :param model2_type: Architecture of the second model.
     """
-    metrics = ["model1_results", "model2_results", "isotropic_results", "fisher_results"]
-    accuracy = [results[m]["accuracy"] * 100 for m in metrics]
+    # Extract accuracy values for plotting
+    accuracy = [
+        results["model1_results"],  # Direct accuracy value
+        results["model2_results"],  # Direct accuracy value
+        results["isotropic_results"]["accuracy"] * 100,  # Nested dictionary
+        results["fisher_results"]["accuracy"] * 100,  # Nested dictionary
+    ]
+
+    # Define labels for each bar
     labels = [
         f"{model1_type.upper()} Model",
         f"{model2_type.upper()} Model",
@@ -157,9 +167,12 @@ def plot_generalization_results(results, model1_type, model2_type):
         "Fisher Merged",
     ]
 
+    # Plot the bar chart
     plt.figure(figsize=(10, 6))
     plt.bar(labels, accuracy, color=["blue", "green", "orange", "purple"])
     plt.title(f"Generalization of Merging Techniques ({model1_type.upper()} vs. {model2_type.upper()})")
     plt.ylabel("Accuracy (%)")
     plt.ylim(0, 100)
-    plt.show()
+    plt.xticks(rotation=15, ha="right")
+    plt.tight_layout()
+    plt.show(block=True)
