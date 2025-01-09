@@ -3,19 +3,10 @@ import argparse
 from torch import nn
 
 from models.cifar10_models import CIFAR10ResNet, CIFAR10VGG
-from src.core.analyze_pipeline import analyze_pipeline
+from src.core.cli_tool import CLITool
 from src.core.divergent_models_pipeline import divergent_models_pipeline
-from src.core.fisher_information_visualization_pipeline import fisher_information_visualization_pipeline
-from src.core.fisher_scaling_experiment import fisher_scaling_experiment
-from src.core.generalization_pipeline import generalization_pipeline
-from src.core.merging_methods import comparison_pipeline
-from src.core.noisy_training_pipeline import noisy_training_pipeline
 from src.models.mnist_model import MNISTMLP, MNISTCNN
-from src.utils.utiliy import validate_model, plot_generalization_results
 from utils.dataset_loader import DatasetLoader
-from core.training_pipeline import TrainingPipeline
-from core.fisher_weighted_averaging import FisherWeightedAveraging
-from utils.model_io import ModelIO
 
 
 def main():
@@ -36,7 +27,6 @@ def main():
                         help="Visualize Fisher Information across model layers.")
     parser.add_argument("--generalize", action="store_true", help="Test merging generalization across architectures.")
     parser.add_argument("--model2", type=str, help="Second model architecture for generalization testing.")
-
 
     args = parser.parse_args()
 
@@ -69,126 +59,127 @@ def main():
             model2 = CIFAR10VGG()
 
     criterion = nn.CrossEntropyLoss()
-    if args.analyze:
-        print("Running Comparison Pipeline with Experiments...")
-        model1 = ModelIO.load_model(model1, f"{args.dataset}_{args.model}_1.pth")
-        model2 = ModelIO.load_model(model2, f"{args.dataset}_{args.model}_2.pth")
+    # if args.analyze:
+    #     print("Running Comparison Pipeline with Experiments...")
+    #     model1 = ModelIO.load_model(model1, f"{args.dataset}_{args.model}_1.pth")
+    #     model2 = ModelIO.load_model(model2, f"{args.dataset}_{args.model}_2.pth")
+    #
+    #     # Experiment: Uniform Weights
+    #     analyze_pipeline(train_loader, test_loader, model1, model2, criterion, use_uniform_weights=True)
+    #
+    #     # Experiment: Layer-wise Fisher
+    #     layers_to_merge = ["fc1.weight", "fc2.weight"]  # Example for fully connected layers
+    #     analyze_pipeline(train_loader, test_loader, model1, model2, criterion, layer_wise_fisher=layers_to_merge)
+    #
+    #     # Experiment: Fisher Scaling
+    #     for scaling_factor in [0.5, 1.0, 2.0]:
+    #         print(f"Running with Fisher Scaling Factor: {scaling_factor}")
+    #         analyze_pipeline(train_loader, test_loader, model1, model2, criterion, fisher_scaling=scaling_factor)
+    #
+    #     return
+    #
+    # if args.noise:
+    #     print("Running Noisy Models Pipeline...")
+    #     noisy_training_pipeline()
+    #     return
+    #
+    # if args.scaling:
+    #     print("Running Fisher Scaling Experiment...")
+    #     # Load pre-trained models
+    #     model1 = ModelIO.load_model(model1, f"{args.dataset}_{args.model}_1.pth")
+    #     model2 = ModelIO.load_model(model2, f"{args.dataset}_{args.model}_2.pth")
+    #     criterion = nn.CrossEntropyLoss()
+    #
+    #     # Compute Fisher Information
+    #     print("Computing Fisher Information for Model 1...")
+    #     fisher1 = FisherWeightedAveraging.compute_fisher_information(model1, train_loader, criterion)
+    #     print("Computing Fisher Information for Model 2...")
+    #     fisher2 = FisherWeightedAveraging.compute_fisher_information(model2, train_loader, criterion)
+    #
+    #     # Run the scaling experiment
+    #     fisher_scaling_experiment(train_loader, test_loader, model1, model2, fisher1, fisher2, criterion)
+    #
+    #     return
+    #
+    # if args.fisher_visualize:
+    #     print("Running Fisher Information Visualization Pipeline...")
+    #     model1 = ModelIO.load_model(model1, f"{args.dataset}_{args.model}_1.pth")
+    #     criterion = nn.CrossEntropyLoss()
+    #
+    #     # Run Fisher Information Visualization Pipeline
+    #     fisher_information_visualization_pipeline(model1, train_loader, criterion)
+    #     return
+    #
+    # if args.generalize:
+    #     print("Running Generalization Pipeline...")
+    #     model1_type = args.model
+    #     model2_type = args.model2
+    #     dataset = args.dataset
+    #
+    #     # Load dataset
+    #     if dataset == "cifar10":
+    #         train_loader, test_loader = DatasetLoader.load_cifar10()
+    #     else:
+    #         raise ValueError("Generalization testing is currently supported only for CIFAR-10.")
+    #
+    #     # Run generalization pipeline
+    #     results = generalization_pipeline(
+    #         dataset=dataset,
+    #         model1_type=model1_type,
+    #         model2_type=model2_type,
+    #         train_loader=train_loader,
+    #         test_loader=test_loader,
+    #         epochs=args.epochs,
+    #     )
+    #
+    #     # Plot results
+    #     plot_generalization_results(results, model1_type, model2_type)
+    #
+    # # Handle Training Pipeline
+    # if not args.merge and not args.compare:
+    #     print(f"Training {args.model} on {args.dataset}...")
+    #     pipeline1 = TrainingPipeline(model1, train_loader, test_loader)
+    #     pipeline1.train(epochs=args.epochs)
+    #     pipeline1.test()
+    #
+    #     print("Model 1 Validation:", validate_model(model1, test_loader, criterion))
+    #     ModelIO.save_model(model1, f"{args.dataset}_{args.model}_1.pth")
+    #
+    #     pipeline2 = TrainingPipeline(model2, train_loader, test_loader)
+    #     pipeline2.train(epochs=args.epochs)
+    #     pipeline2.test()
+    #     print("Model 2 Validation:", validate_model(model2, test_loader, criterion))
+    #     ModelIO.save_model(model2, f"{args.dataset}_{args.model}_2.pth")
+    #     print(f"Trained models saved as '{args.dataset}_{args.model}_1.pth' and '{args.dataset}_{args.model}_2.pth'.")
+    #
+    # # Handle Model Merging
+    # if args.merge:
+    #     print("Merging Models...")
+    #     model1 = ModelIO.load_model(model1, f"{args.dataset}_{args.model}_1.pth")
+    #     model2 = ModelIO.load_model(model2, f"{args.dataset}_{args.model}_2.pth")
+    #     criterion = nn.CrossEntropyLoss()
+    #
+    #     print("Computing Fisher Information...")
+    #     fisher1 = FisherWeightedAveraging.compute_fisher_information(model1, train_loader, criterion)
+    #     fisher2 = FisherWeightedAveraging.compute_fisher_information(model2, train_loader, criterion)
+    #
+    #     merged_model = FisherWeightedAveraging.merge_models(model1, model2, fisher1, fisher2, alpha=args.alpha)
+    #     ModelIO.save_model(merged_model, f"{args.dataset}_{args.model}_merged.pth")
+    #     print(f"Merged model saved as '{args.dataset}_{args.model}_merged.pth'.")
+    #
+    #     print("\nValidating Merged Model...")
+    #     merged_results = FisherWeightedAveraging.validate_model(merged_model, test_loader, criterion)
+    #     print("Merged Model Results:", merged_results)
+    #
+    # # Handle Comparison Pipeline
+    # if args.compare:
+    #     print("Running Comparison Pipeline...")
+    #     model1 = ModelIO.load_model(model1, f"{args.dataset}_{args.model}_1.pth")
+    #     model2 = ModelIO.load_model(model2, f"{args.dataset}_{args.model}_2.pth")
+    #     criterion = nn.CrossEntropyLoss()
+    #     comparison_pipeline(train_loader, test_loader, model1, model2, criterion)
 
-        # Experiment: Uniform Weights
-        analyze_pipeline(train_loader, test_loader, model1, model2, criterion, use_uniform_weights=True)
-
-        # Experiment: Layer-wise Fisher
-        layers_to_merge = ["fc1.weight", "fc2.weight"]  # Example for fully connected layers
-        analyze_pipeline(train_loader, test_loader, model1, model2, criterion, layer_wise_fisher=layers_to_merge)
-
-        # Experiment: Fisher Scaling
-        for scaling_factor in [0.5, 1.0, 2.0]:
-            print(f"Running with Fisher Scaling Factor: {scaling_factor}")
-            analyze_pipeline(train_loader, test_loader, model1, model2, criterion, fisher_scaling=scaling_factor)
-
-        return
-
-    if args.noise:
-        print("Running Noisy Models Pipeline...")
-        noisy_training_pipeline()
-        return
-
-    if args.scaling:
-        print("Running Fisher Scaling Experiment...")
-        # Load pre-trained models
-        model1 = ModelIO.load_model(model1, f"{args.dataset}_{args.model}_1.pth")
-        model2 = ModelIO.load_model(model2, f"{args.dataset}_{args.model}_2.pth")
-        criterion = nn.CrossEntropyLoss()
-
-        # Compute Fisher Information
-        print("Computing Fisher Information for Model 1...")
-        fisher1 = FisherWeightedAveraging.compute_fisher_information(model1, train_loader, criterion)
-        print("Computing Fisher Information for Model 2...")
-        fisher2 = FisherWeightedAveraging.compute_fisher_information(model2, train_loader, criterion)
-
-        # Run the scaling experiment
-        fisher_scaling_experiment(train_loader, test_loader, model1, model2, fisher1, fisher2, criterion)
-
-        return
-
-    if args.fisher_visualize:
-        print("Running Fisher Information Visualization Pipeline...")
-        model1 = ModelIO.load_model(model1, f"{args.dataset}_{args.model}_1.pth")
-        criterion = nn.CrossEntropyLoss()
-
-        # Run Fisher Information Visualization Pipeline
-        fisher_information_visualization_pipeline(model1, train_loader, criterion)
-        return
-
-    if args.generalize:
-        print("Running Generalization Pipeline...")
-        model1_type = args.model
-        model2_type = args.model2
-        dataset = args.dataset
-
-        # Load dataset
-        if dataset == "cifar10":
-            train_loader, test_loader = DatasetLoader.load_cifar10()
-        else:
-            raise ValueError("Generalization testing is currently supported only for CIFAR-10.")
-
-        # Run generalization pipeline
-        results = generalization_pipeline(
-            dataset=dataset,
-            model1_type=model1_type,
-            model2_type=model2_type,
-            train_loader=train_loader,
-            test_loader=test_loader,
-            epochs=args.epochs,
-        )
-
-        # Plot results
-        plot_generalization_results(results, model1_type, model2_type)
-
-    # Handle Training Pipeline
-    if not args.merge and not args.compare:
-        print(f"Training {args.model} on {args.dataset}...")
-        pipeline1 = TrainingPipeline(model1, train_loader, test_loader)
-        pipeline1.train(epochs=args.epochs)
-        pipeline1.test()
-
-        print("Model 1 Validation:", validate_model(model1, test_loader, criterion))
-        ModelIO.save_model(model1, f"{args.dataset}_{args.model}_1.pth")
-
-        pipeline2 = TrainingPipeline(model2, train_loader, test_loader)
-        pipeline2.train(epochs=args.epochs)
-        pipeline2.test()
-        print("Model 2 Validation:", validate_model(model2, test_loader, criterion))
-        ModelIO.save_model(model2, f"{args.dataset}_{args.model}_2.pth")
-        print(f"Trained models saved as '{args.dataset}_{args.model}_1.pth' and '{args.dataset}_{args.model}_2.pth'.")
-
-    # Handle Model Merging
-    if args.merge:
-        print("Merging Models...")
-        model1 = ModelIO.load_model(model1, f"{args.dataset}_{args.model}_1.pth")
-        model2 = ModelIO.load_model(model2, f"{args.dataset}_{args.model}_2.pth")
-        criterion = nn.CrossEntropyLoss()
-
-        print("Computing Fisher Information...")
-        fisher1 = FisherWeightedAveraging.compute_fisher_information(model1, train_loader, criterion)
-        fisher2 = FisherWeightedAveraging.compute_fisher_information(model2, train_loader, criterion)
-
-        merged_model = FisherWeightedAveraging.merge_models(model1, model2, fisher1, fisher2, alpha=args.alpha)
-        ModelIO.save_model(merged_model, f"{args.dataset}_{args.model}_merged.pth")
-        print(f"Merged model saved as '{args.dataset}_{args.model}_merged.pth'.")
-
-        print("\nValidating Merged Model...")
-        merged_results = FisherWeightedAveraging.validate_model(merged_model, test_loader, criterion)
-        print("Merged Model Results:", merged_results)
-
-    # Handle Comparison Pipeline
-    if args.compare:
-        print("Running Comparison Pipeline...")
-        model1 = ModelIO.load_model(model1, f"{args.dataset}_{args.model}_1.pth")
-        model2 = ModelIO.load_model(model2, f"{args.dataset}_{args.model}_2.pth")
-        criterion = nn.CrossEntropyLoss()
-        comparison_pipeline(train_loader, test_loader, model1, model2, criterion)
-
-
+    cli_tool = CLITool(args)
+    cli_tool.run()
 if __name__ == "__main__":
     main()
