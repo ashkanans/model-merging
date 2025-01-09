@@ -1,7 +1,8 @@
 from torch import nn
 
 from src.core.fisher_weighted_averaging import FisherWeightedAveraging
-from src.core.merging_methods import NaiveMerging, OutputEnsembling
+from src.core.isotropic_merging import NaiveMerging
+from src.core.output_ensemble_merging import OutputEnsembling
 from src.core.training_pipeline import TrainingPipeline
 from src.models.cifar10_models import CIFAR10ResNet, CIFAR10VGG
 from src.models.mnist_model import MNISTMLP, MNISTCNN

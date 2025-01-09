@@ -1,6 +1,6 @@
 from torch import nn
 
-from src.core.merging_methods import NaiveMerging
+from src.core.isotropic_merging import NaiveMerging
 from src.core.training_pipeline import TrainingPipeline
 from src.utils.utiliy import validate_model
 
