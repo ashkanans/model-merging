@@ -6,51 +6,70 @@ from tqdm import tqdm
 
 def validate_model(model, data_loader, criterion):
     """
-    Validate a model on a dataset and compute metrics.
+    Validate a model on a dataset or multiple datasets and compute metrics.
 
     :param model: The model to validate.
-    :param data_loader: DataLoader providing the validation dataset.
+    :param data_loader: DataLoader or a dictionary of DataLoaders for validation datasets.
     :param criterion: Loss function used for evaluation.
-    :return: A dictionary containing evaluation metrics: accuracy, F1-score, precision, recall, and loss.
+    :return: A dictionary containing evaluation metrics for each dataset:
+             {dataset_name: {"accuracy", "f1_score", "precision", "recall", "loss"}}.
     """
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model.to(device)
     model.eval()
 
-    all_targets = []
-    all_predictions = []
-    total_loss = 0.0
+    def _validate_single(data_loader):
+        """
+        Validate the model on a single dataset.
 
-    with torch.no_grad():
-        for data, target in tqdm(data_loader, desc="Validating Model", unit="batch"):
-            # Move data and target to the appropriate device
-            data, target = data.to(device), target.to(device)
+        :param data_loader: DataLoader for the dataset.
+        :return: Dictionary with evaluation metrics.
+        """
+        all_targets = []
+        all_predictions = []
+        total_loss = 0.0
 
-            # Forward pass
-            output = model(data)
-            loss = criterion(output, target)
-            total_loss += loss.item()
+        with torch.no_grad():
+            for data, target in tqdm(data_loader, desc="Validating Model", unit="batch"):
+                # Move data and target to the appropriate device
+                data, target = data.to(device), target.to(device)
 
-            # Convert logits to predictions
-            _, predictions = torch.max(output, dim=1)
+                # Forward pass
+                output = model(data)
+                loss = criterion(output, target)
+                total_loss += loss.item()
 
-            # Collect predictions and targets for metric calculation
-            all_targets.extend(target.cpu().numpy())
-            all_predictions.extend(predictions.cpu().numpy())
+                # Convert logits to predictions
+                _, predictions = torch.max(output, dim=1)
 
-    # Calculate metrics
-    accuracy = accuracy_score(all_targets, all_predictions)
-    f1 = f1_score(all_targets, all_predictions, average='weighted')
-    precision = precision_score(all_targets, all_predictions, average='weighted')
-    recall = recall_score(all_targets, all_predictions, average='weighted')
+                # Collect predictions and targets for metric calculation
+                all_targets.extend(target.cpu().numpy())
+                all_predictions.extend(predictions.cpu().numpy())
 
-    return {
-        "loss": total_loss / len(data_loader),
-        "accuracy": accuracy,
-        "f1_score": f1,
-        "precision": precision,
-        "recall": recall
-    }
+        # Calculate metrics
+        accuracy = accuracy_score(all_targets, all_predictions)
+        f1 = f1_score(all_targets, all_predictions, average='weighted')
+        precision = precision_score(all_targets, all_predictions, average='weighted')
+        recall = recall_score(all_targets, all_predictions, average='weighted')
+
+        return {
+            "loss": total_loss / len(data_loader),
+            "accuracy": accuracy,
+            "f1_score": f1,
+            "precision": precision,
+            "recall": recall
+        }
+
+    # Handle single DataLoader or dictionary of DataLoaders
+    if isinstance(data_loader, dict):
+        results = {}
+        for dataset_name, loader in data_loader.items():
+            print(f"Validating on {dataset_name} dataset...")
+            results[dataset_name] = _validate_single(loader)
+        return results
+    else:
+        # Single dataset
+        return _validate_single(data_loader)
 
 
 def plot_layer_distributions(model, layer_names, title):
@@ -62,11 +81,6 @@ def plot_layer_distributions(model, layer_names, title):
     plt.ylabel("Frequency")
     plt.legend()
     plt.show(block=True)
-
-
-import matplotlib.pyplot as plt
-
-import matplotlib.pyplot as plt
 
 
 def plot_layer_distributions_with_stats(models, layer_names, model_labels):
@@ -176,3 +190,89 @@ def plot_generalization_results(results, model1_type, model2_type):
     plt.xticks(rotation=15, ha="right")
     plt.tight_layout()
     plt.show(block=True)
+
+
+def draw_comparison_chart(isotropic_results, ensemble_results, fisher_results):
+    """
+    Generate comparison charts for each dataset or a single dataset based on the validation results
+    of isotropic merging, Fisher merging, and output ensembling.
+
+    :param isotropic_results: Dictionary containing validation metrics for isotropic merging.
+    :param ensemble_results: Dictionary containing validation metrics for output ensembling.
+    :param fisher_results: Dictionary containing validation metrics for Fisher merging.
+    """
+    # Check if the results are for a single dataset or multiple datasets
+    is_single_dataset = isinstance(isotropic_results, dict) and 'accuracy' in isotropic_results
+
+    if is_single_dataset:
+        # Handle single dataset case
+        print("Generating comparison charts for a single dataset...")
+
+        # Extract accuracy and F1-score
+        accuracies = [
+            isotropic_results['accuracy'] * 100,
+            fisher_results['accuracy'] * 100,
+            ensemble_results['accuracy'] * 100
+        ]
+        f1_scores = [
+            isotropic_results['f1_score'] * 100,
+            fisher_results['f1_score'] * 100,
+            ensemble_results['f1_score'] * 100
+        ]
+
+        # Define labels for the methods
+        methods = ["Isotropic Merging", "Fisher Merging", "Output Ensembling"]
+
+        # Plot accuracy comparison
+        plt.figure(figsize=(10, 5))
+        plt.bar(methods, accuracies, color=["orange", "blue", "green"])
+        plt.ylim(0, 100)
+        plt.ylabel("Accuracy (%)")
+        plt.title("Comparison of Merging Methods: Accuracy")
+        plt.show()
+
+        # Plot F1-score comparison
+        plt.figure(figsize=(10, 5))
+        plt.bar(methods, f1_scores, color=["orange", "blue", "green"])
+        plt.ylim(0, 100)
+        plt.ylabel("F1-Score (%)")
+        plt.title("Comparison of Merging Methods: F1-Score")
+        plt.show()
+    else:
+        # Handle multiple datasets case
+        print("Generating comparison charts for multiple datasets...")
+        dataset_names = isotropic_results.keys()
+
+        for dataset in dataset_names:
+            print(f"Generating comparison charts for {dataset}...")
+
+            # Extract accuracy and F1-score for the current dataset
+            accuracies = [
+                isotropic_results[dataset]['accuracy'] * 100,
+                fisher_results[dataset]['accuracy'] * 100,
+                ensemble_results[dataset]['accuracy'] * 100
+            ]
+            f1_scores = [
+                isotropic_results[dataset]['f1_score'] * 100,
+                fisher_results[dataset]['f1_score'] * 100,
+                ensemble_results[dataset]['f1_score'] * 100
+            ]
+
+            # Define labels for the methods
+            methods = ["Isotropic Merging", "Fisher Merging", "Output Ensembling"]
+
+            # Plot accuracy comparison for the current dataset
+            plt.figure(figsize=(10, 5))
+            plt.bar(methods, accuracies, color=["orange", "blue", "green"])
+            plt.ylim(0, 100)
+            plt.ylabel("Accuracy (%)")
+            plt.title(f"Comparison of Merging Methods: Accuracy ({dataset})")
+            plt.show()
+
+            # Plot F1-score comparison for the current dataset
+            plt.figure(figsize=(10, 5))
+            plt.bar(methods, f1_scores, color=["orange", "blue", "green"])
+            plt.ylim(0, 100)
+            plt.ylabel("F1-Score (%)")
+            plt.title(f"Comparison of Merging Methods: F1-Score ({dataset})")
+            plt.show()
