@@ -99,7 +99,7 @@ def plot_layer_distributions_with_stats(models, layer_names, model_labels):
     num_models = len(models)
 
     # Create subplots
-    fig, axes = plt.subplots(num_layers, num_models, figsize=(4 * num_models, 4 * num_layers), sharey=True)
+    fig, axes = plt.subplots(num_layers, num_models, figsize=(4 * num_models, 4 * num_layers), sharey=False)
     axes = axes if num_layers > 1 else [axes]  # Ensure axes is always 2D
 
     for i, layer_name in enumerate(layer_names):
@@ -116,10 +116,13 @@ def plot_layer_distributions_with_stats(models, layer_names, model_labels):
                 max_val = weights.max()
 
                 # Plot histogram
-                ax.hist(weights, bins=50, alpha=0.6, color="blue")
+                hist_values, bins, _ = ax.hist(weights, bins=50, alpha=0.6, color="blue")
                 ax.set_title(f"{label} ({layer_name})", fontsize=10)
                 ax.set_xlabel("Weight Values", fontsize=8)
                 ax.set_ylabel("Frequency", fontsize=8)
+
+                # Adjust y-axis range dynamically
+                ax.set_ylim(0, max(hist_values) * 1.1)  # Add a 10% margin above the max frequency
 
                 # Add statistics as text on the plot
                 stats_text = f"Mean: {mean_val:.4f}\nStd: {std_val:.4f}\nMin: {min_val:.4f}\nMax: {max_val:.4f}"

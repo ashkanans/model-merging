@@ -22,10 +22,10 @@ class CLITool:
         self.test_loader = None
         self.args = args
 
-        self.ablation = True
-        self.abl_scaling_factors = args.scaling_factors
-        self.abl_layers = args.layers
-        self.abl_weighting = "weighting" in args.ablation
+        self.ablation = args.ablation
+        self.abl_scaling_factors = args.scaling_factors if self.ablation else []
+        self.abl_layers = args.layers if self.ablation else []
+        self.abl_weighting = "weighting" in args.ablation if self.ablation else False
 
     def run(self):
         """
