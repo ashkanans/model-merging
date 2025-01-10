@@ -1,5 +1,6 @@
 from torch import nn
 
+from src.core.fisher_scaling_experiment import fisher_scaling_experiment
 from src.core.fisher_weighted_averaging import FisherWeightedAveraging
 from src.core.isotropic_merging import NaiveMerging
 from src.core.output_ensemble_merging import OutputEnsembling
@@ -17,13 +18,22 @@ class CLITool:
     CLI tool for managing neural network training, merging, and validation.
     """
     def __init__(self, args):
+        self.train_loader = None
+        self.test_loader = None
         self.args = args
+
+        self.ablation = True
+        self.abl_scaling_factors = args.scaling_factors
+        self.abl_layers = args.layers
+        self.abl_weighting = "weighting" in args.ablation
 
     def run(self):
         """
         Executes the requested commands in sequence.
         """
         train_loader, test_loader, model1, model2 = self._initialize_models()
+        self.train_loader, self.test_loader = train_loader, test_loader
+
         merged_models = {}
         validation_results = None
 
@@ -47,8 +57,7 @@ class CLITool:
                     "fisher": merged_models.get("fisher"),
                     "ensemble": merged_models.get("ensemble")
                 })
-            elif command == "ablation":
-                self._run_ablation_experiment(model1, model2, train_loader, test_loader)
+
 
     def _initialize_models(self):
         """
@@ -215,7 +224,7 @@ class CLITool:
                     merged_models["fisher"] = self._merge_fisher(model1, model2, train_loader)
                     ModelIO.save_model(
                         merged_models["fisher"],
-                        f"{self.args.dataset}_{self.args.model}_fisher_merged.pth"
+                        f"{self.args.dataset[0]}_{self.args.model}_fisher_merged.pth"
                     )
                     print(f"Fisher merged model saved: {self.args.dataset}_{self.args.model}_fisher_merged.pth")
                 elif merge_type == "isotropic":
@@ -223,7 +232,7 @@ class CLITool:
                     merged_models["isotropic"] = NaiveMerging.merge_models(model1, model2)
                     ModelIO.save_model(
                         merged_models["isotropic"],
-                        f"{self.args.dataset}_{self.args.model}_isotropic_merged.pth"
+                        f"{self.args.dataset[0]}_{self.args.model}_isotropic_merged.pth"
                     )
                     print(f"Isotropic merged model saved: {self.args.dataset}_{self.args.model}_isotropic_merged.pth")
                 elif merge_type == "ensemble":
@@ -231,7 +240,7 @@ class CLITool:
                     merged_models["ensemble"] = OutputEnsembling.merge_models(model1, model2)
                     ModelIO.save_model(
                         merged_models["ensemble"],
-                        f"{self.args.dataset}_{self.args.model}_ensemble_merged.pth"
+                        f"{self.args.dataset[0]}_{self.args.model}_ensemble_merged.pth"
                     )
                     print(f"Ensemble merged model saved: {self.args.dataset}_{self.args.model}_ensemble_merged.pth")
 
@@ -259,10 +268,20 @@ class CLITool:
             print(f"Computing Fisher Information for Model 2 on {dataset_keys[1]}...")
             fisher2 = FisherWeightedAveraging.compute_fisher_information(model2, train_loader[dataset_keys[1]],
                                                                          criterion)
+            scaling_factor = 1
+            if self.ablation and len(self.abl_scaling_factors) == 1:
+                scaling_factor = self.abl_scaling_factors[0]
+            if self.ablation and len(self.abl_scaling_factors) > 1:
+                scaling_factor = fisher_scaling_experiment(self.test_loader, model1, model2, fisher1, fisher2,
+                                                           criterion, self.abl_scaling_factors)
 
             print(
                 f"Merging models trained on {dataset_keys[0]} and {dataset_keys[1]} using Fisher-weighted averaging...")
-            merged_model = FisherWeightedAveraging.merge_models(model1, model2, fisher1, fisher2, alpha=self.args.alpha)
+            merged_model = FisherWeightedAveraging.merge_models(model1, model2, fisher1, fisher2,
+                                                                alpha=self.args.alpha,
+                                                                fisher_scaling=scaling_factor,
+                                                                layer_wise_fisher=self.abl_layers,
+                                                                uniform_weights=self.abl_weighting)
 
             save_path = f"{dataset_keys[0]}_{dataset_keys[1]}_{self.args.model}_fisher_merged.pth"
         else:
@@ -273,10 +292,22 @@ class CLITool:
             print("Computing Fisher Information for Model 2...")
             fisher2 = FisherWeightedAveraging.compute_fisher_information(model2, train_loader, criterion)
 
-            print("Merging models using Fisher-weighted averaging...")
-            merged_model = FisherWeightedAveraging.merge_models(model1, model2, fisher1, fisher2, alpha=self.args.alpha)
+            scaling_factor = 1
+            if self.ablation and len(self.abl_scaling_factors) == 1:
+                scaling_factor = self.abl_scaling_factors[0]
+            if self.ablation and len(self.abl_scaling_factors) > 1:
+                scaling_factor = fisher_scaling_experiment(self.test_loader, model1, model2, fisher1, fisher2,
+                                                           criterion, scaling_factors=self.abl_scaling_factors,
+                                                           weighting=self.abl_weighting, layers=self.abl_layers)
 
-            save_path = f"{self.args.dataset}_{self.args.model}_fisher_merged.pth"
+            print("Merging models using Fisher-weighted averaging...")
+            merged_model = FisherWeightedAveraging.merge_models(model1, model2, fisher1, fisher2,
+                                                                alpha=self.args.alpha,
+                                                                fisher_scaling=scaling_factor,
+                                                                layer_wise_fisher=self.abl_layers,
+                                                                uniform_weights=self.abl_weighting)
+
+            save_path = f"{self.args.dataset[0]}_{self.args.model}_fisher_merged.pth"
 
         ModelIO.save_model(merged_model, save_path)
         print(f"Fisher-merged model saved at: {save_path}")
@@ -389,6 +420,3 @@ class CLITool:
         else:
             print("Training Model 2 without noise...")
             self._train_and_save_model(model2, train_loader, test_loader, "2", dataset_name=dataset_names[1])
-
-    def _run_ablation_experiment(self, model1, model2, train_loader, test_loader):
-        pass

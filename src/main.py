@@ -31,6 +31,11 @@ def main():
                         help="Commands to execute: train, merge, validate, ablation, visualize.")
     parser.add_argument("--noisy_models", type=str, nargs="*", choices=["model1", "model2"],
                         help="Specify which models to train with noise (model1, model2, or both).")
+    parser.add_argument("--ablation", type=str, nargs="*", choices=["weighting", "layer_specific", "fisher_scaling"],
+                        help="Specify ablation studies to run: weighting, layer_specific, fisher_scaling.")
+    parser.add_argument("--scaling_factors", type=float, nargs="*", default=[1.0],
+                        help="Scaling factors for Fisher Information during ablation.")
+    parser.add_argument("--layers", type=str, nargs="*", help="Layers to merge for layer-specific ablation.")
 
     args = parser.parse_args()
 
