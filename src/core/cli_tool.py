@@ -370,7 +370,7 @@ class CLITool:
             model_labels = ["Model 1", "Model 2", "Isotropic Merged", "Fisher Merged"]
 
             if self.args.model == "mlp":
-                layer_names = ["fc1.weight", "fc2.weight"]
+                layer_names = ["fc1.weight", "fc2.weight", "fc3.weight"]
             elif self.args.model == "cnn":
                 layer_names = ["conv1.weight", "conv2.weight", "fc1.weight", "fc2.weight"]
             else:
